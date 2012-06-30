@@ -1,8 +1,4 @@
-"""
-This script is RETIRED!
-"""
-
-
+import json
 import sys
 import datetime
 import math
@@ -127,78 +123,33 @@ def gwas(cases, controls, MAFs, alpha):
     return res
 
 
+def binarize_matrix(mat):
+    return [[int(bool(v)) for v in row] for row in mat]
 
-
-
-test_mat = \
-   [[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0],
-    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1],
-    [0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-    [0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-    [0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0]]
-
-
-#[1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0],
-#[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1],
-#[0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0],
-#[0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-#[0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-
-
-#implanted: [([2, 4, 8, 13, 16], [3, 4, 7, 13, 16])]
-
-SNPs = 500000
-CASES = 1000
-CONTROLS = 1000
-BICLUSTERS = 10
-BI_MAX_SNPs = 5
-BI_MAX_INDs = 70
 
 if __name__ == '__main__':
-    case_m = matrix(CASES, SNPs)
-    cont_m = matrix(CONTROLS, SNPs)
-    implanted = []
-    for bc in xrange(BICLUSTERS):
-        bc_i = BI_MAX_INDs #random.randint(BI_MAX_INDs - 2, BI_MAX_INDs)
-        bc_s = BI_MAX_SNPs #random.randint(BI_MAX_SNPs - 2, BI_MAX_SNPs)
 
-        case_inds = sorted(random.sample(xrange(CASES), bc_i))
-        case_snps = sorted(random.sample(xrange(SNPs), bc_s))
-        implanted.append((case_snps, case_inds))
+#    data = json.load(open('CEU_GWAS.json'))
+    data = json.load(open('random_GWAS.json'))
 
-        for i in case_inds:
-            for j in case_snps:
-                case_m[i][j] = 1
+    cases = binarize_matrix(data['cases'])
+    controls = binarize_matrix(data['controls'])
+    implanted_biclusters = data['implanted_biclusters']
 
-    # add some noise
-    MAFs = [0.1 for i in xrange(SNPs)]
-    for j, maf in enumerate(MAFs):
-        for i in xrange(CASES):
-            if random.random() < maf:
-                case_m[i][j] = 1
-                cont_m[i][j] = 1
+    MAFs = [(1 + sum(controls[ind][snp_id] for ind in xrange(len(controls))))/float(2*len(controls))
+                for snp_id in xrange(len(controls[0]))]
+
+
 
 #    print pformat(case_m)
-#    biclusters = BiBit(case_m, 5, 5)
-#    biclusters = bicluzt(case_m, 5, 5)
-#    print 'found:', pformat([(decode_column(key), individuals) for key, individuals in biclusters.iteritems()])
-    print 'implanted:', pformat([imp[0] for imp in implanted])
-    print 'gwas:', pformat(gwas(case_m, cont_m, MAFs, 0.05))
+#    biclusters = BiBit(cases, 5, 5)
+    biclusters = bicluzt(cases, 5, 5)
+
+    print 'found:', pformat([(decode_column(key), individuals) for key, individuals in biclusters.iteritems()])
+
+    print 'implanted:', pformat([imp[1] for imp in implanted_biclusters])
+    print 'gwas:', pformat(gwas(cases, controls, MAFs, 0.05))
+
     elapsed('done')
 #       control_inds = random.sample(xrange(CONTROLS))
 
