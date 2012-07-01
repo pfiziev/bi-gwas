@@ -17,21 +17,16 @@ import random
 from scipy.stats import pearsonr
 from utils import *
 
-CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
-
-BI_CASES = 0.1 # fraction of cases that are in one bicluster
-BI_SNPS = 20   # number of SNPs per bicluster
-BICLUSTERS = 1 # number of biclusters
 
 
 def generate_random_cases_and_controls():
 
-    SNPs = 20
-    CASES = 200
-    CONTROLS = 200
+    SNPs = 1000
+    CASES = 1000
+    CONTROLS = 1000
     BICLUSTERS = 1
-    BI_MAX_SNPs = 5
-    BI_MAX_INDs = 10
+    BI_MAX_SNPs = 100
+    BI_MAX_INDs = 100
 
     case_m = matrix(CASES, SNPs)
     cont_m = matrix(CONTROLS, SNPs)
@@ -67,6 +62,13 @@ def generate_random_cases_and_controls():
 
 
 def generate_from_BEAM():
+    PPL_TO_TAKE = 200
+
+    CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
+
+    BI_CASES = 0.1 # fraction of cases that are in one bicluster
+    BI_SNPS = 20   # number of SNPs per bicluster
+    BICLUSTERS = 1 # number of biclusters
 
     snp_file = open('SIMLD/CEU.BEAM.txt')
     _ = snp_file.readline()
@@ -76,19 +78,18 @@ def generate_from_BEAM():
     pop_size = len(snps[0])
 
     total_cases = int(CASE_CONTROL_RATIO * pop_size)
-    total_controls = pop_size - total_cases
 
     # create cases and controls matrices and transpose them:
-    cases    = [list(row) for row in zip(*[snp[:total_cases] for snp in snps])]
-    controls = [list(row) for row in zip(*[snp[total_cases:] for snp in snps])]
+    cases    = [list(row) for row in zip(*[snp[:total_cases] for snp in snps])][:PPL_TO_TAKE]
+    controls = [list(row) for row in zip(*[snp[total_cases:] for snp in snps])][:PPL_TO_TAKE]
 
 
-    implanted_biclusters = [[ random.sample(xrange(total_cases), int(BI_CASES*total_cases)),
+    implanted_biclusters = [[ random.sample(xrange(PPL_TO_TAKE), int(BI_CASES*PPL_TO_TAKE)),
                     random.sample(xrange(total_snps), BI_SNPS)]
                         for _ in xrange(BICLUSTERS)]
 
 
-    for bi_snps, bi_ppl in implanted_biclusters:
+    for bi_ppl, bi_snps in implanted_biclusters:
         for person_id in bi_ppl:
             for snp_id in bi_snps:
                 cases[person_id][snp_id] = 2

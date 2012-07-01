@@ -64,6 +64,7 @@ def bicluzt(mat, min_rows, min_cols):
     seen = set()
     for i in xrange(len(bitmat)):
         if bitmat[i] not in seen and ones(bitmat[i]) >= min_cols:
+            elapsed('i: %d' % i)
             i_clust = {bitmat[i] :  set([i])}
 
             for j in xrange(i+1, len(bitmat)):
@@ -74,7 +75,9 @@ def bicluzt(mat, min_rows, min_cols):
                         i_clust.setdefault(j_seed, set())
                         i_clust[j_seed].update(i_clust[seed])
                         i_clust[j_seed].add(j)
-            print len(i_clust)
+
+                elapsed('j:%d\ti_clust length: %d' % (j, len(i_clust)))
+            elapsed('i:%d\ti_clust length: %d' % (i, len(i_clust)))
             for seed in i_clust:
                 seen.add(seed)
                 if len(i_clust[seed]) >= min_rows:
@@ -98,6 +101,8 @@ def BiBit(mat, min_rows, min_cols):
                         cluster.add(r)
                 if len(cluster) >= min_rows:
                     clusters[p_ij] = cluster
+
+        elapsed('i: %d' % i)
 
     return clusters
 
@@ -129,8 +134,8 @@ def binarize_matrix(mat):
 
 if __name__ == '__main__':
 
-#    data = json.load(open('CEU_GWAS.json'))
-    data = json.load(open('random_GWAS.json'))
+    data = json.load(open('CEU_GWAS.json'))
+#    data = json.load(open('random_GWAS.json'))
 
     cases = binarize_matrix(data['cases'])
     controls = binarize_matrix(data['controls'])
@@ -140,9 +145,9 @@ if __name__ == '__main__':
                 for snp_id in xrange(len(controls[0]))]
 
 
-
+    elapsed('cases: %d\tcontrols: %d' % (len(cases), len(controls)))
 #    print pformat(case_m)
-#    biclusters = BiBit(cases, 5, 5)
+#    biclusters = BiBit(cases, 10, 10)
     biclusters = bicluzt(cases, 5, 5)
 
     print 'found:', pformat([(decode_column(key), individuals) for key, individuals in biclusters.iteritems()])
