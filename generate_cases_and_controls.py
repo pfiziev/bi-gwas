@@ -21,9 +21,9 @@ from utils import *
 
 def generate_random_cases_and_controls():
 
-    SNPs = 1000
+    SNPs = 30000
     CASES = 1000
-    CONTROLS = 1000
+    CONTROLS = 100
     BICLUSTERS = 1
     BI_MAX_SNPs = 100
     BI_MAX_INDs = 100
@@ -34,6 +34,8 @@ def generate_random_cases_and_controls():
 
     # add some noise
     MAFs = [0.1] * SNPs
+
+#    MAFs = [0.05 + (float(i)/(3*SNPs)) for i in xrange(SNPs)]
 
     for j, maf in enumerate(MAFs):
         for i in xrange(CASES):
@@ -62,12 +64,12 @@ def generate_random_cases_and_controls():
 
 
 def generate_from_BEAM():
-    PPL_TO_TAKE = 200
+    PPL_TO_TAKE = 1000
 
     CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
 
-    BI_CASES = 0.1 # fraction of cases that are in one bicluster
-    BI_SNPS = 20   # number of SNPs per bicluster
+    BI_CASES = 100 # fraction of cases that are in one bicluster
+    BI_SNPS = 50   # number of SNPs per bicluster
     BICLUSTERS = 1 # number of biclusters
 
     snp_file = open('SIMLD/CEU.BEAM.txt')
@@ -83,13 +85,16 @@ def generate_from_BEAM():
     cases    = [list(row) for row in zip(*[snp[:total_cases] for snp in snps])][:PPL_TO_TAKE]
     controls = [list(row) for row in zip(*[snp[total_cases:] for snp in snps])][:PPL_TO_TAKE]
 
+    total_cases = min(PPL_TO_TAKE, total_cases)
 
-    implanted_biclusters = [[ random.sample(xrange(PPL_TO_TAKE), int(BI_CASES*PPL_TO_TAKE)),
+    implanted_biclusters = [[ random.sample(xrange(total_cases), int(BI_CASES)),
                     random.sample(xrange(total_snps), BI_SNPS)]
                         for _ in xrange(BICLUSTERS)]
 
 
+
     for bi_ppl, bi_snps in implanted_biclusters:
+        print 'implanting - people:', len(bi_ppl), ', snps:', len(bi_snps)
         for person_id in bi_ppl:
             for snp_id in bi_snps:
                 cases[person_id][snp_id] = 2

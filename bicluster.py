@@ -134,8 +134,8 @@ def binarize_matrix(mat):
 
 if __name__ == '__main__':
 
-    data = json.load(open('CEU_GWAS.json'))
-#    data = json.load(open('random_GWAS.json'))
+#    data = json.load(open('CEU_GWAS.json'))
+    data = json.load(open('random_GWAS2.json'))
 
     cases = binarize_matrix(data['cases'])
     controls = binarize_matrix(data['controls'])
@@ -148,9 +148,9 @@ if __name__ == '__main__':
     elapsed('cases: %d\tcontrols: %d' % (len(cases), len(controls)))
 #    print pformat(case_m)
 #    biclusters = BiBit(cases, 10, 10)
-    biclusters = bicluzt(cases, 5, 5)
+#    biclusters = bicluzt(cases, 5, 5)
 
-    print 'found:', pformat([(decode_column(key), individuals) for key, individuals in biclusters.iteritems()])
+#    print 'found:', pformat([(decode_column(key), individuals) for key, individuals in biclusters.iteritems()])
 
     print 'implanted:', pformat([imp[1] for imp in implanted_biclusters])
     print 'gwas:', pformat(gwas(cases, controls, MAFs, 0.05))
