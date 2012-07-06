@@ -21,15 +21,16 @@ from utils import *
 
 def generate_random_cases_and_controls():
 
-    SNPs = 30000
+    SNPs = 300000
     CASES = 1000
     CONTROLS = 100
     BICLUSTERS = 1
-    BI_MAX_SNPs = 100
+    BI_MAX_SNPs = 101
     BI_MAX_INDs = 100
 
-    case_m = matrix(CASES, SNPs)
-    cont_m = matrix(CONTROLS, SNPs)
+    case_m = matrix(SNPs, CASES)
+    cont_m = matrix(SNPs, CONTROLS)
+
     implanted_biclusters = []
 
     # add some noise
@@ -37,11 +38,11 @@ def generate_random_cases_and_controls():
 
 #    MAFs = [0.05 + (float(i)/(3*SNPs)) for i in xrange(SNPs)]
 
-    for j, maf in enumerate(MAFs):
-        for i in xrange(CASES):
+    for i, maf in enumerate(MAFs):
+        for j in xrange(CASES):
             case_m[i][j] = (1 if random.random() < maf else 0) + (1 if random.random() < maf else 0)
 
-        for i in xrange(CONTROLS):
+        for j in xrange(CONTROLS):
             cont_m[i][j] = (1 if random.random() < maf else 0) + (1 if random.random() < maf else 0)
 
 
@@ -53,51 +54,60 @@ def generate_random_cases_and_controls():
         case_inds = sorted(random.sample(xrange(CASES), bc_i))
         case_snps = sorted(random.sample(xrange(SNPs), bc_s))
 
-        implanted_biclusters.append((case_inds, case_snps))
-
-        for i in case_inds:
-            for j in case_snps:
+        implanted_biclusters.append((case_snps, case_inds))
+        for i in case_snps:
+            for j in case_inds:
                 case_m[i][j] = 2
 
 
-    json.dump({'cases': case_m, 'controls': cont_m, 'implanted_biclusters' : implanted_biclusters}, open('random_GWAS.json', 'w'))
+    json.dump({'cases': case_m, 'controls': cont_m, 'implanted_biclusters' : implanted_biclusters}, open('random_GWAS_300k.json', 'w'))
 
 
 def generate_from_BEAM():
+
     PPL_TO_TAKE = 1000
 
     CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
 
     BI_CASES = 100 # fraction of cases that are in one bicluster
-    BI_SNPS = 50   # number of SNPs per bicluster
+    BI_SNPS = 100   # number of SNPs per bicluster
     BICLUSTERS = 1 # number of biclusters
 
     snp_file = open('SIMLD/CEU.BEAM.txt')
+
+    # read out disease status. this information is irrelevant.
     _ = snp_file.readline()
+
     snps = [map(int, l.split()) for l in snp_file]
     snp_file.close()
+
     total_snps = len(snps)
     pop_size = len(snps[0])
 
     total_cases = int(CASE_CONTROL_RATIO * pop_size)
 
     # create cases and controls matrices and transpose them:
-    cases    = [list(row) for row in zip(*[snp[:total_cases] for snp in snps])][:PPL_TO_TAKE]
-    controls = [list(row) for row in zip(*[snp[total_cases:] for snp in snps])][:PPL_TO_TAKE]
+#    cases    = [list(row) for row in zip(*[snp[:total_cases] for snp in snps])][:PPL_TO_TAKE]
+#    controls = [list(row) for row in zip(*[snp[total_cases:] for snp in snps])][:PPL_TO_TAKE]
+
+    # don't transpose anything
+    cases    = [snp[:total_cases] for snp in snps]
+    controls = [snp[total_cases:] for snp in snps]
 
     total_cases = min(PPL_TO_TAKE, total_cases)
 
-    implanted_biclusters = [[ random.sample(xrange(total_cases), int(BI_CASES)),
-                    random.sample(xrange(total_snps), BI_SNPS)]
-                        for _ in xrange(BICLUSTERS)]
+    implanted_biclusters = [[ random.sample(xrange(total_snps), BI_SNPS),
+                              random.sample(xrange(total_cases), int(BI_CASES))]
+                                        for _ in xrange(BICLUSTERS)]
 
 
 
-    for bi_ppl, bi_snps in implanted_biclusters:
+    for bi_snps, bi_ppl in implanted_biclusters:
         print 'implanting - people:', len(bi_ppl), ', snps:', len(bi_snps)
-        for person_id in bi_ppl:
-            for snp_id in bi_snps:
-                cases[person_id][snp_id] = 2
+
+        for snp_id in bi_snps:
+            for person_id in bi_ppl:
+                cases[snp_id][person_id] = 2
 
 #    snp_freq = [sum(snp)/float(2*pop_size) for snp in snps]
 #    cc = [[0 for i in xrange(total_snps)] for j in xrange(total_snps)]
@@ -113,5 +123,5 @@ def generate_from_BEAM():
 
 
 if __name__ == '__main__':
-#    generate_from_BEAM()
-    generate_random_cases_and_controls()
+    generate_from_BEAM()
+#    generate_random_cases_and_controls()
