@@ -13,6 +13,8 @@ SNPs in the biclusters are set to 2.
 
 
 import json
+import os
+import cPickle as pickle
 import random
 from scipy.stats import pearsonr
 from utils import *
@@ -122,6 +124,72 @@ def generate_from_BEAM():
 
 
 
+def generate_from_BEAM_chunks():
+    HOMOZYGOUS = 1
+    HETEROZYGOUS = 0
+
+    CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
+
+    BI_CASES = 100 # fraction of cases that are in one bicluster
+    BI_SNPS = 30   # number of SNPs per bicluster
+    BICLUSTERS = 1 # number of biclusters
+    FILES_TO_TAKE = 20
+
+    TOTAL_CASES = 1000
+    TOTAL_INDIVIDUALS = 2000
+    case_ids = random.sample(xrange(TOTAL_INDIVIDUALS), TOTAL_CASES)
+    control_ids = [pid for pid in xrange(TOTAL_INDIVIDUALS) if pid not in case_ids]
+
+
+    snp_dir = 'SIMLD/CEU_300k_chunked'
+
+    cases = []
+    controls = []
+
+    for snp_fname in map(lambda f: os.path.join(snp_dir, f), sorted([f for f in os.listdir(snp_dir) if f.endswith('.txt')]))[:FILES_TO_TAKE]:
+        print 'processing', snp_fname
+
+        snp_file = open(snp_fname)
+
+        # read out disease status to deterimin population size.
+        pop_size = len(snp_file.readline().split())
+        total_cases = int(CASE_CONTROL_RATIO * pop_size)
+
+        for l in snp_file:
+            snps = [0 if v == '0' else
+                   (HETEROZYGOUS if v == '1' else
+                   (HOMOZYGOUS if v == '2' else None)) for v in l.split()]
+
+            cases.append([snps[pid] for pid in case_ids])
+            controls.append([snps[pid] for pid in control_ids])
+
+
+        snp_file.close()
+
+    total_snps = len(cases)
+
+    implanted_biclusters = [[ sorted(random.sample(xrange(total_snps), BI_SNPS)),
+                              sorted(random.sample(xrange(total_cases), BI_CASES))]
+                                    for _ in xrange(BICLUSTERS)]
+
+
+    for bi_snps, bi_ppl in implanted_biclusters:
+        print 'implanting - people:', len(bi_ppl), ', snps:', len(bi_snps)
+
+        for snp_id in bi_snps:
+            for person_id in bi_ppl:
+                cases[snp_id][person_id] = HOMOZYGOUS
+
+
+
+    pickle.dump({ 'cases': cases,
+                  'controls': controls,
+                  'implanted_biclusters' : implanted_biclusters},
+                open('SIMLD/CEU_300k_chunked/CEU_300k.pickle', 'w'),
+                pickle.HIGHEST_PROTOCOL)
+
+
 if __name__ == '__main__':
-    generate_from_BEAM()
+#    generate_from_BEAM()
+    generate_from_BEAM_chunks()
 #    generate_random_cases_and_controls()

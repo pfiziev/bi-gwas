@@ -1,3 +1,4 @@
+from itertools import izip
 import json
 import os
 import random
@@ -6,7 +7,9 @@ import shutil
 import subprocess
 import sys
 import datetime
+import math
 import numpy as np
+import cPickle as pickle
 
 __author__ = 'pf'
 
@@ -19,7 +22,7 @@ def bit_encode(mat):
     for i, row in enumerate(mat):
         mask = 1
         for cell in row:
-            if cell == 2:
+            if cell:
                 res[i] += mask
             mask <<= 1
 
@@ -53,35 +56,66 @@ def ones(num):
     return c
 
 
-def find_potential_snps(cases):
-    CHUNK_SIZE = 1000
+def find_potential_snps(cases, controls):
+    CHUNK_SIZE = 5000
     potential_snps = set()
 
-    print 'cases:', len(cases)
+    print 'case snps:', len(cases)
+    total_controls = float(len(controls[0]))
+    print 'total controls:', total_controls
+    potential_snps_genotypes = []
+
     for chunk_no in xrange(1+(len(cases) - 1)/CHUNK_SIZE):
-        local_real = real_case_snps & set(xrange(chunk_no*CHUNK_SIZE, (chunk_no+1)*CHUNK_SIZE))
+        base_snp_id = chunk_no*CHUNK_SIZE
+        last_snp_id = (chunk_no+1)*CHUNK_SIZE
+        local_real = real_case_snps & set(xrange(base_snp_id, last_snp_id))
+
         print now(), 'processing chunk:', chunk_no, 'real snps:', len(local_real)
         print 'local real:', sorted(local_real)
-        bitmat = bit_encode(cases[chunk_no*CHUNK_SIZE: (chunk_no+1)*CHUNK_SIZE])
+
+        cases_bitmat = bit_encode(cases[base_snp_id: last_snp_id])
+
+        cases_bitmat.extend(bit_encode(potential_snps_genotypes))
+
         print now(), 'bit encoding done'
-        base_snp_id = chunk_no*CHUNK_SIZE
+
+        control_means = [sum(snp)/total_controls for snp in controls[base_snp_id: last_snp_id]]
+        control_denominators = [math.sqrt(total_controls*p*(1-p)) for p in control_means]
+        print now(), 'LD precalculations done'
+
 
         pairs = {}
-        for i in xrange(len(bitmat)):
+        for i in xrange(len(cases_bitmat)):
             if i % 200 == 0: print now(), base_snp_id + i, len(pairs)
 
-            if ones(bitmat[i]) < MIN_SUBJECTS:
+            if i < CHUNK_SIZE and (control_denominators[i] == 0 or ones(cases_bitmat[i]) < MIN_SUBJECTS):
                 continue
 
-            for j in xrange(i+1, len(bitmat)):
-                p_ij = bitmat[i] & bitmat[j]
+            for j in xrange(i+1, len(cases_bitmat)):
+                if (i < CHUNK_SIZE and j < CHUNK_SIZE) and \
+                  (control_denominators[j] == 0 or
+                   sum((x - control_means[i])*(y - control_means[j])
+                            for x, y in izip(controls[i],controls[j]))/(control_denominators[i]*control_denominators[j]) >= 0.05):
+                    continue
+
+                if i >= CHUNK_SIZE and j >= CHUNK_SIZE:
+                    continue
+
+                pair = set()
+                if i < CHUNK_SIZE:
+                    pair.add(base_snp_id + i)
+                if j < CHUNK_SIZE:
+                    pair.add(base_snp_id + j)
+
+
+                p_ij = cases_bitmat[i] & cases_bitmat[j]
 #                x = ones(p_ij) >= MIN_SUBJECTS
 #                continue
                 if p_ij in pairs:
-                    pairs[p_ij] |= {base_snp_id + i, base_snp_id + j}
+                    pairs[p_ij] |= pair
 
                 elif ones(p_ij) >= MIN_SUBJECTS:
-                    pairs[p_ij] = {base_snp_id + i, base_snp_id + j}
+                    pairs[p_ij] = pair
 
         print now(), 'pairs found:', len(pairs)
         print 'local real:', sorted(local_real)
@@ -94,10 +128,14 @@ def find_potential_snps(cases):
                 if ones(pair_keys[i] & pair_keys[j]) >= MIN_SUBJECTS:
                     potential_snps |= pairs[pair_keys[i]] | pairs[pair_keys[j]]
 
+
+        potential_snps_genotypes = [cases[snp_id] for snp_id in potential_snps]
+
         print now(), 'potential snps:', len(potential_snps)
         print now(), 'among them real snps:', len(real_case_snps & potential_snps)
 #        print 'potential:', sorted(potential_snps)
 #        print 'among them real:', sorted(real_case_snps & potential_snps)
+
         print '+'*100, '\n'
 
     return potential_snps
@@ -123,16 +161,20 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
 
-    CHUNK_SIZE = 100
+    CHUNK_SIZE = 5000
     MIN_SUBJECTS = 90
 #    input_fname = sys.argv[1]
 
 #    input_fname = '../random_GWAS_300k.json'
-    input_fname = '../CEU_GWAS.json'
+#    input_fname = '../CEU_GWAS.json'
+
+    input_fname = '../SIMLD/CEU_300k_chunked/CEU_300k.pickle'
 
     print now(), input_fname
 
-    data = json.load(open(input_fname))
+#    data = json.load(open(input_fname))
+    data = pickle.load(open(input_fname))
+
     tmp_dir = os.path.split(input_fname)[1] + '-tmp'
     if os.path.isdir(tmp_dir):
         shutil.rmtree(tmp_dir)
@@ -149,31 +191,33 @@ if __name__ == '__main__':
 
     real_case_snps, real_case_inds = data['implanted_biclusters'][0]
 
-    print 'case inds:', len(real_case_inds)
-    print 'case snps:', len(real_case_snps)
+    print 'real case inds:', len(real_case_inds)
+    print 'real case snps:', len(real_case_snps)
 
     real_case_snps = set(real_case_snps)
     real_case_inds = set(real_case_inds)
 
-    potential_snps = find_potential_snps(data['cases'])
+    potential_snps = find_potential_snps(data['cases'], data['controls'])
     final_snps = set()
 
     print now(), 'initial potential snps:', len(potential_snps)
     print 'real snps among them:', len(potential_snps & real_case_snps)
 
     iteration = 0
-    total_iterations = 2*(1 + (total_snps - 1)/CHUNK_SIZE) + 1
+#    total_iterations = 2*(1 + (total_snps - 1)/CHUNK_SIZE) + 1
+    total_iterations = 1
 
     while iteration < total_iterations:
         print now(), 'iteration:', iteration, 'out of', total_iterations
 
 #        snps_to_test = set(random.sample(xrange(total_snps), CHUNK_SIZE)) | potential_snps
 
-        start_snp = (iteration% (total_snps/CHUNK_SIZE))*CHUNK_SIZE
+        start_snp = (iteration % (total_snps/CHUNK_SIZE))*CHUNK_SIZE
         end_snp = min(total_snps, ((iteration%(total_snps/CHUNK_SIZE)) + 1)*CHUNK_SIZE)
 
         if iteration == total_iterations - 1:
-            chunk_snps = final_snps
+#            chunk_snps = final_snps
+            chunk_snps = potential_snps
             start_snp, end_snp = ['final', 'final']
         else:
             chunk_snps = set(xrange(start_snp, end_snp))
@@ -192,7 +236,7 @@ if __name__ == '__main__':
         outf.write('snp_ids\t'+'\t'.join('ind_%d' % i for i in xrange(total_inds))+'\n')
 
         for snp_id in snps_to_test:
-            outf.write('snp_%d\t' % snp_id + '\t'.join(str(1 if data['cases'][snp_id][ind_id] == 2 else 0) for ind_id in xrange(total_inds)) + '\n')
+            outf.write('snp_%d\t' % snp_id + '\t'.join(str(data['cases'][snp_id][ind_id]) for ind_id in xrange(total_inds)) + '\n')
 
         outf.close()
 
