@@ -8,7 +8,7 @@ import subprocess
 import sys
 import datetime
 import math
-import numpy as np
+#import numpy as np
 import cPickle as pickle
 
 __author__ = 'pf'
@@ -57,7 +57,7 @@ def ones(num):
 
 
 def find_potential_snps(cases, controls):
-    CHUNK_SIZE = 5000
+    CHUNK_SIZE = 20000
     potential_snps = set()
 
     print 'case snps:', len(cases)
