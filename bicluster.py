@@ -306,3 +306,31 @@ if __name__ == '__main__':
 #print 'E(#chunks):', P_c * total_chunks
 #tries = 70
 #print 'alpha(%d):'%tries, 1-(1-P_c)**tries
+
+
+## code to plot the allele distributions for cases and controls
+#import numpy as np
+#import matplotlib.pyplot as plt
+#import matplotlib.mlab as mlab
+#
+#import cPickle as pickle
+#
+#data = pickle.load(open('/home/pf/local_temp/bi-gwas/SIMLD/CEU_300k_chunked/CEU_300k.pickle'))
+#
+#maf_cases = [float(sum(snp))/len(snp) for snp in data['cases']]
+#maf_controls = [float(sum(snp))/len(snp) for snp in data['controls']]
+#
+#
+#fig = plt.figure()
+#ax = fig.add_subplot(111)
+#
+## the histogram of the data
+#n, bins, patches = ax.hist(maf_cases, 50, normed=1, facecolor='green', alpha=0.75)
+#ax.set_title('Homozygous allele distribution in cases')
+#
+#fig = plt.figure()
+#ax = fig.add_subplot(111)
+#
+## the histogram of the data
+#n, bins, patches = ax.hist(maf_controls, 50, normed=1, facecolor='green', alpha=0.75)
+#ax.set_title('Homozygous allele distribution in controls')

@@ -151,7 +151,7 @@ def generate_from_BEAM_chunks():
 
         snp_file = open(snp_fname)
 
-        # read out disease status to deterimin population size.
+        # read out disease status to determine population size.
         pop_size = len(snp_file.readline().split())
         total_cases = int(CASE_CONTROL_RATIO * pop_size)
 
