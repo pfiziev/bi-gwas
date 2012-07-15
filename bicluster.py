@@ -115,6 +115,7 @@ def preprocess(cases, controls, real_case_snps):
 
     print 'chunk size:', CHUNK_SIZE
     print 'case snps:', len(cases)
+    print 'causal snps:', len(real_case_snps)
     total_controls = float(len(controls[0]))
     print 'total controls:', total_controls
     potential_snps_genotypes = []
@@ -133,8 +134,14 @@ def preprocess(cases, controls, real_case_snps):
 
         print now(), 'bit encoding done'
 
-        control_means = [sum(snp)/total_controls for snp in controls[base_snp_id: last_snp_id]]
-        control_denominators = [math.sqrt(total_controls*p*(1-p)) for p in control_means]
+#        control_means = [sum(snp)/total_controls for snp in controls[base_snp_id: last_snp_id]]
+#        control_denominators = [math.sqrt(total_controls*p*(1-p)) for p in control_means]
+
+        controls_bitmat = bit_encode(controls[base_snp_id: last_snp_id])
+
+        control_mafs = [ones(snp)/total_controls for snp in controls_bitmat]
+        control_denominators = [math.sqrt(p*(1-p)) for p in control_mafs]
+
         print now(), 'LD precalculations done'
 
 
@@ -148,8 +155,14 @@ def preprocess(cases, controls, real_case_snps):
             for j in xrange(i+1, len(cases_bitmat)):
                 if (i < CHUNK_SIZE and j < CHUNK_SIZE) and\
                    (control_denominators[j] == 0 or
-                    sum((x - control_means[i])*(y - control_means[j])
-                        for x, y in izip(controls[i],controls[j]))/(control_denominators[i]*control_denominators[j]) >= 0.05):
+
+                   (ones(controls_bitmat[i] & controls_bitmat[j])/total_controls - control_mafs[i]*control_mafs[j])/
+                   (control_denominators[i]*control_denominators[j]) >= 0.2
+
+#                    sum((x - control_means[i])*(y - control_means[j])
+#                        for x, y in izip(controls[i],controls[j]))/(control_denominators[i]*control_denominators[j]) >= 0.05
+
+                       ):
                     continue
 
                 if i >= CHUNK_SIZE and j >= CHUNK_SIZE:
