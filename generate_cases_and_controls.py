@@ -16,7 +16,7 @@ import json
 import os
 import cPickle as pickle
 import random
-from scipy.stats import pearsonr
+#from scipy.stats import pearsonr
 from utils import *
 
 
