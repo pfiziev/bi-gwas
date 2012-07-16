@@ -145,7 +145,11 @@ def find_potential_snps(cases, controls, potential_snps, potential_snp_genotypes
 
     pairs = {}
     for i in xrange(chunk_size):
-        if i % 200 == 0: print now(), i, snp_mapping[i], len(pairs)
+        if i % 200 == 0:
+            print now(), i, snp_mapping[i], len(pairs)
+            if len(pairs) > 3*chunk_size:
+                print "Giving up!"
+                break
 
         if control_denominators[i] == 0 or ones(cases_bitmat[i]) < MIN_SUBJECTS:
             continue
@@ -234,7 +238,7 @@ def preprocess(cases, controls, real_case_snps):
                             chunk_no,
                             snp_mapping = snp_mapping )
 
-        print now(), 'potential snps:',len(potential_snps), sorted(potential_snps)
+        print now(), 'potential snps:',len(potential_snps)#, sorted(potential_snps)
         print now(), 'among them real snps:', len(real_case_snps & potential_snps)
         print '+'*100, '\n'
 
@@ -446,7 +450,11 @@ if __name__ == '__main__':
 
 #    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_10_SNPs_by_100_INDS.pickle'
 
-    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_80_INDS.pickle'
+#    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_80_INDS.pickle'
+
+#    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_70_INDS.pickle'
+
+    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_60_INDS.pickle'
 
 
 #    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_15_SNPs_by_100_INDS.pickle'
@@ -542,7 +550,7 @@ if __name__ == '__main__':
 #
 #import cPickle as pickle
 #
-#data = pickle.load(open('/home/pf/local_temp/bi-gwas/SIMLD/CEU_300k_chunked/CEU_300k.pickle'))
+#data = pickle.load(open('SIMLD/CEU_300k_10k_chunked/CEU_300k_100_SNPs_by_100_INDS.pickle'))
 #
 #maf_cases = [float(sum(snp))/len(snp) for snp in data['cases']]
 #maf_controls = [float(sum(snp))/len(snp) for snp in data['controls']]
