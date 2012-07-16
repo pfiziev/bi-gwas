@@ -569,3 +569,52 @@ if __name__ == '__main__':
 ## the histogram of the data
 #n, bins, patches = ax.hist(maf_controls, 50, normed=1, facecolor='green', alpha=0.75)
 #ax.set_title('Homozygous allele distribution in controls')
+
+
+##code to calculate the LD structure:
+#
+#
+#def ld(bitmat):
+#    total_inds = float(bitmat[0].bit_length())
+#    total_snps = len(bitmat)
+#    mafs = [ones(snp)/total_inds for snp in bitmat]
+#    #    print [m for m in  mafs if m > 1 or m < 0]
+#    dens = [math.sqrt(p*(1-p)) for p in mafs]
+#    ld_mat = zeros((total_snps, total_snps))
+#    for i in xrange(total_snps):
+#        ld_mat[i][i] = 1
+#        if i > 0:
+#            ld_mat[i][i-1] = -1
+#        for j in xrange(i + 1, total_snps):
+#            if dens[i] and dens[j]:
+#                ld_mat[i][j] = (ones(bitmat[i] & bitmat[j])/total_inds - mafs[i]*mafs[j])/(dens[i]*dens[j])
+#
+#    return ld_mat
+
+#
+#from matplotlib.pylab import *
+#
+#
+#def bit_encode(mat):
+#    res = [0]*len(mat)
+#    for i, row in enumerate(mat):
+#        mask = 1
+#        for cell in row:
+#            if cell:
+#                res[i] += mask
+#            mask <<= 1
+#
+#    return res
+#
+#def ones(num):
+#    c = 0
+#    while num:
+#        num &= num - 1
+#        c+= 1
+#    return c
+#
+#data = pickle.load(open('/home/pf/local_temp/bi-gwas/SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_70_INDS.pickle'))
+#cases = data['cases'][:200]
+#controls = data['controls'][1000:1200]
+#
+#matshow(ld(bit_encode(cases)))
