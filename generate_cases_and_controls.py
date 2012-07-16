@@ -130,8 +130,8 @@ def generate_from_BEAM_chunks():
 
     CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
 
-    BI_CASES = 50 # fraction of cases that are in one bicluster
-    BI_SNPS = 50   # number of SNPs per bicluster
+    BI_CASES = 80 # fraction of cases that are in one bicluster
+    BI_SNPS = 30   # number of SNPs per bicluster
 
     BICLUSTERS = 1 # number of biclusters
     TOTAL_SNPS = 100000

@@ -177,7 +177,7 @@ def find_potential_snps(cases, controls, potential_snps, potential_snp_genotypes
 
     print now(), 'pairs found:', len(pairs)
     print 'local real:', sorted(local_real)
-    print 'pairs:', pairs.values()
+    print 'pairs:', pairs.values() if len(pairs) < 100 else '> 100'
 
     pair_keys = pairs.keys()
 
@@ -195,7 +195,7 @@ def find_potential_snps(cases, controls, potential_snps, potential_snp_genotypes
     #        print 'potential:', sorted(potential_snps)
     #        print 'among them real:', sorted(real_case_snps & potential_snps)
 
-    print 'potential snps list:', potential_snps
+    print 'potential snps list:', potential_snps if len(potential_snps) < 100 else '>100'
     return potential_snps
 
 
@@ -441,7 +441,14 @@ if __name__ == '__main__':
 #    cases = binarize_matrix(data['cases'])
 #    controls = binarize_matrix(data['controls'])
 #    implanted_biclusters = data['implanted_biclusters']
-    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_100_INDS.pickle'
+#    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_100_INDS.pickle'
+
+
+#    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_10_SNPs_by_100_INDS.pickle'
+
+    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_80_INDS.pickle'
+
+
 #    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_15_SNPs_by_100_INDS.pickle'
 #    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_10k_30_SNPs_by_100_INDS.pickle'
 
@@ -452,13 +459,14 @@ if __name__ == '__main__':
     controls = binarize_matrix(data['controls'])
     implanted_biclusters = data['implanted_biclusters']
 
-    MAX_LD = 0.5
+    MAX_LD = 0.2
 
     MIN_SUBJECTS = min(len(subj) for _, subj in implanted_biclusters)
     MIN_SNPS = min(len(bi_snps) for bi_snps, _ in implanted_biclusters)
 
     print 'MIN_SUBJECTS:', MIN_SUBJECTS
     print 'MIN_SNPs:', MIN_SNPS
+    print 'MAX LD:', MAX_LD
 
 
     potential_snps = sorted(preprocess(cases, controls, set(implanted_biclusters[0][0])))
