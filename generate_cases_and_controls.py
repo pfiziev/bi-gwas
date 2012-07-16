@@ -132,8 +132,9 @@ def generate_from_BEAM_chunks():
 
     BI_CASES = 100 # fraction of cases that are in one bicluster
     BI_SNPS = 30   # number of SNPs per bicluster
+
     BICLUSTERS = 1 # number of biclusters
-    FILES_TO_TAKE = 20
+    FILES_TO_TAKE = 10
 
     TOTAL_CASES = 1000
     TOTAL_INDIVIDUALS = 2000
@@ -141,7 +142,7 @@ def generate_from_BEAM_chunks():
     control_ids = [pid for pid in xrange(TOTAL_INDIVIDUALS) if pid not in case_ids]
 
 
-    snp_dir = 'SIMLD/CEU_300k_chunked'
+    snp_dir = 'SIMLD/CEU_300k_10k_chunked'
 
     cases = []
     controls = []
@@ -177,15 +178,26 @@ def generate_from_BEAM_chunks():
         print 'implanting - people:', len(bi_ppl), ', snps:', len(bi_snps)
 
         for snp_id in bi_snps:
+
+            # first delete an equal amount of minor alleles of the snp to keep the
+            # MAF the same after implanting the bicluster
+            carriers = [person_id for person_id in xrange(total_cases) if cases[snp_id][person_id] == HOMOZYGOUS]
+            to_delete = random.sample(carriers, min(len(carriers), len(bi_ppl)))
+
+            for person_id in to_delete:
+                cases[snp_id][person_id] = 0
+
+
             for person_id in bi_ppl:
                 cases[snp_id][person_id] = HOMOZYGOUS
 
 
-
+    out_fname = os.path.join(snp_dir, 'CEU_%dk_%d_SNPs_by_%d_INDS.pickle' % (len(cases)/1000, BI_SNPS, BI_CASES))
+    print 'output:', out_fname
     pickle.dump({ 'cases': cases,
                   'controls': controls,
                   'implanted_biclusters' : implanted_biclusters},
-                open('SIMLD/CEU_300k_chunked/CEU_300k.pickle', 'w'),
+                open(out_fname, 'w'),
                 pickle.HIGHEST_PROTOCOL)
 
 

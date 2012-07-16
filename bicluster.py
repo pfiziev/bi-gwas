@@ -108,17 +108,166 @@ def BiBit(mat, min_rows, min_cols):
     return clusters
 
 
+def find_potential_snps(cases, controls, local_real, chunk_no, base_snp_id = None, snp_mapping = None):
+    total_controls = float(len(controls[0]))
 
-def preprocess(cases, controls, real_case_snps):
-    CHUNK_SIZE = 5000
+    chunk_size = len(controls)
+
+    print now(), 'processing chunk:', chunk_no, 'real snps:', len(local_real)
+
+
+    print 'local real:', sorted(local_real)
+
+
+    cases_bitmat = bit_encode(cases)
+    controls_bitmat = bit_encode(controls)
+
     potential_snps = set()
 
+    print now(), 'bit encoding done'
+
+    control_mafs = [ones(snp)/total_controls for snp in controls_bitmat]
+    control_denominators = [math.sqrt(p*(1-p)) for p in control_mafs]
+
+    print now(), 'LD precalculations done'
+
+
+    pairs = {}
+    for i in xrange(len(cases_bitmat)):
+        if i % 200 == 0: print now(), (base_snp_id if base_snp_id is not None else 0) + i, len(pairs)
+
+        if i < chunk_size and (control_denominators[i] == 0 or ones(cases_bitmat[i]) < MIN_SUBJECTS):
+            continue
+
+        for j in xrange(i+1, len(cases_bitmat)):
+            if (i < chunk_size and j < chunk_size) and\
+               (control_denominators[j] == 0 or
+
+                (ones(controls_bitmat[i] & controls_bitmat[j])/total_controls - control_mafs[i]*control_mafs[j])/
+                (control_denominators[i]*control_denominators[j]) >= 0.2
+
+                #                    sum((x - control_means[i])*(y - control_means[j])
+                #                        for x, y in izip(controls[i],controls[j]))/(control_denominators[i]*control_denominators[j]) >= 0.05
+
+                   ):
+                continue
+
+            if i >= chunk_size and j >= chunk_size:
+                continue
+
+            pair = set()
+            if i < chunk_size:
+                pair.add((base_snp_id + i) if base_snp_id is not None else snp_mapping[i])
+            if j < chunk_size:
+                pair.add((base_snp_id + j) if base_snp_id is not None else snp_mapping[j])
+
+
+            p_ij = cases_bitmat[i] & cases_bitmat[j]
+            #                x = ones(p_ij) >= MIN_SUBJECTS
+            #                continue
+            if p_ij in pairs:
+                pairs[p_ij] |= pair
+
+            elif ones(p_ij) >= MIN_SUBJECTS:
+                pairs[p_ij] = pair
+
+    print now(), 'pairs found:', len(pairs)
+    print 'local real:', sorted(local_real)
+    #        print pairs
+
+    pair_keys = pairs.keys()
+
+    for i in xrange(len(pair_keys)):
+        for j in xrange(i+1, len(pair_keys)):
+            if ones(pair_keys[i] & pair_keys[j]) >= MIN_SUBJECTS:
+                potential_snps |= pairs[pair_keys[i]] | pairs[pair_keys[j]]
+
+
+    print now(), 'potential snps:', len(potential_snps)
+    print now(), 'among them real snps:', len(real_case_snps & potential_snps)
+    print now(), 'local not found:', len(local_real - potential_snps)
+    #        print 'potential:', sorted(potential_snps)
+    #        print 'among them real:', sorted(real_case_snps & potential_snps)
+    print '+'*100, '\n'
+
+    return potential_snps
+
+
+
+def preprocess(cases, controls, real_case_snps):
+    CHUNK_SIZE = 10000
+    potential_snps = set()
+    total_snps = len(cases)
+
     print 'chunk size:', CHUNK_SIZE
-    print 'case snps:', len(cases)
+    print 'total snps:', total_snps
     print 'causal snps:', len(real_case_snps)
     total_controls = float(len(controls[0]))
     print 'total controls:', total_controls
     potential_snps_genotypes = []
+
+    chunks_to_sample = how_many_chunks(total_snps , CHUNK_SIZE, len(real_case_snps), 0.95)
+    print now(), 'chunks to sample:', chunks_to_sample
+    for chunk_no in xrange(chunks_to_sample):
+        print now(), 'sampling random chunk:', chunk_no
+
+        sample_snps = sorted(random.sample(xrange(total_snps), CHUNK_SIZE))
+
+        sample_cases = [cases[snp_id] for snp_id in sample_snps]
+        sample_cases.extend([cases[snp_id] for snp_id in potential_snps])
+
+        sample_controls= [controls[snp_id] for snp_id in sample_snps]
+
+        potential_snps |= find_potential_snps(sample_cases,
+                                              sample_controls,
+                                              real_case_snps & set(sample_snps),
+                                              chunk_no,
+                                              snp_mapping = sample_snps)
+
+
+    for chunk_no in xrange(1+(total_snps - 1)/CHUNK_SIZE):
+        base_snp_id = chunk_no*CHUNK_SIZE
+        last_snp_id = (chunk_no+1)*CHUNK_SIZE
+        local_real = real_case_snps & set(xrange(base_snp_id, last_snp_id))
+
+        potential_snps |= find_potential_snps(sample_cases,
+                                              sample_controls,
+                                              local_real,
+                                              chunk_no,
+                                              base_snp_id = base_snp_id)
+
+
+
+    return potential_snps
+
+
+
+def _preprocess(cases, controls, real_case_snps):
+    CHUNK_SIZE = 10000
+    potential_snps = set()
+    total_snps = len(cases)
+
+    print 'chunk size:', CHUNK_SIZE
+    print 'total snps:', total_snps
+    print 'causal snps:', len(real_case_snps)
+    total_controls = float(len(controls[0]))
+    print 'total controls:', total_controls
+    potential_snps_genotypes = []
+
+    chunks_to_sample = how_many_chunks(total_snps , CHUNK_SIZE, len(real_case_snps), 0.95)
+    print now(), 'chunks to sample:', chunks_to_sample
+    for chunk_no in xrange(chunks_to_sample):
+        print now(), 'sampling random chunk:', chunk_no
+
+        sample_snps = random.sample(xrange(total_snps), CHUNK_SIZE)
+
+        sample_cases = [cases[snp_id] for snp_id in sample_snps]
+        sample_cases.extend([cases[snp_id] for snp_id in potential_snps])
+
+        sample_controls= [controls[snp_id] for snp_id in sample_snps]
+
+        potential_snps |= find_potential_snps(sample_cases, sample_controls)
+
 
     for chunk_no in xrange(1+(len(cases) - 1)/CHUNK_SIZE):
         base_snp_id = chunk_no*CHUNK_SIZE
@@ -234,6 +383,21 @@ def gwas(cases, controls, MAFs, alpha):
 def binarize_matrix(mat):
     return [[int(bool(v)) for v in row] for row in mat]
 
+
+
+
+def how_many_chunks(total_snps, chunk_size, min_causal_snps, alpha):
+    """
+    Calculates how many chunks we need to consider before being at least alpha % confident
+    that at least one chunk contained minimum 3 causal SNPs
+    """
+    binom_cdf_2 = lambda n, p:  (1-p)**n + n*((1-p)**(n-1))*p + (n*(n-1)/2)*((1-p)**(n-2))*(p**2)
+    total_chunks = total_snps/chunk_size
+    P_c = (1 - binom_cdf_2(min_causal_snps, 1./total_chunks))
+    return int(math.ceil(math.log(1-alpha, 1 - P_c)))
+
+
+
 if __name__ == '__main__':
     MIN_SUBJECTS = 90
     MIN_SNPS = 30
@@ -243,12 +407,13 @@ if __name__ == '__main__':
 #    cases = binarize_matrix(data['cases'])
 #    controls = binarize_matrix(data['controls'])
 #    implanted_biclusters = data['implanted_biclusters']
-    input_file = 'SIMLD/CEU_300k_chunked/CEU_300k.pickle'
+    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_100_INDS.pickle'
+    print 'input:', input_file
+
     data = pickle.load(open(input_file))
     cases = binarize_matrix(data['cases'])
     controls = binarize_matrix(data['controls'])
     implanted_biclusters = data['implanted_biclusters']
-
     potential_snps = sorted(preprocess(cases, controls, set(implanted_biclusters[0][0])))
 
     elapsed('preprocessing')
