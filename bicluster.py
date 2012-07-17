@@ -147,7 +147,7 @@ def find_potential_snps(cases_bitmat, controls_bitmat, potential_snps, potential
     for i in xrange(chunk_size):
         if i % 200 == 0:
             print now(), i, snp_mapping[i], len(pairs)
-            if len(pairs) > 3*chunk_size:
+            if len(pairs) > chunk_size:
                 print "Giving up!"
                 break
 
