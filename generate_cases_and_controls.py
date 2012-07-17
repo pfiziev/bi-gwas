@@ -17,6 +17,7 @@ import os
 import cPickle as pickle
 import random
 #from scipy.stats import pearsonr
+from bicluster import bit_encode
 from utils import *
 
 
@@ -130,8 +131,8 @@ def generate_from_BEAM_chunks():
 
     CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
 
-    BI_CASES = 100 # fraction of cases that are in one bicluster
-    BI_SNPS = 50   # number of SNPs per bicluster
+    BI_CASES = 70 # fraction of cases that are in one bicluster
+    BI_SNPS = 100   # number of SNPs per bicluster
 
     BICLUSTERS = 1 # number of biclusters
     TOTAL_SNPS = 300000
@@ -206,12 +207,28 @@ def generate_from_BEAM_chunks():
 
     out_fname = os.path.join(snp_dir, 'CEU_%dk_%d_SNPs_by_%d_INDS.pickle' % (len(cases)/1000, BI_SNPS, BI_CASES))
     print 'output:', out_fname
-    pickle.dump({ 'cases': cases,
-                  'controls': controls,
-                  'implanted_biclusters' : implanted_biclusters},
+
+#    pickle.dump(cases, open(out_fname+'.cases.pickle'))
+#    pickle.dump(controls, open(out_fname+'.controls.pickle'))
+#    pickle.dump(implanted_biclusters, open(out_fname+'.implanted_biclusters.pickle'))
+
+    total_controls = len(controls[0])
+    total_cases = len(cases[0])
+
+    pickle.dump( [bit_encode(cases),
+                  total_cases,
+                  bit_encode(controls),
+                  total_controls,
+                  implanted_biclusters],
                 open(out_fname, 'w'),
                 pickle.HIGHEST_PROTOCOL)
 
+#    pickle.dump({ 'cases': cases,
+#                  'controls': controls,
+#                  'implanted_biclusters' : implanted_biclusters},
+#                open(out_fname, 'w'),
+#                pickle.HIGHEST_PROTOCOL)
+#
 
 if __name__ == '__main__':
 #    generate_from_BEAM()

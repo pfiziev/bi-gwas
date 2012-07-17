@@ -86,9 +86,9 @@ def bicluzt(mat, min_rows, min_cols):
 
     return clusters
 
-def BiBit(mat, min_rows, min_cols):
+def BiBit(bitmat, min_rows, min_cols):
 
-    bitmat = bit_encode(mat)
+#    bitmat = bit_encode(mat)
     clusters = {}
     for i in xrange(len(bitmat)):
         for j in xrange(i+1, len(bitmat)):
@@ -108,23 +108,23 @@ def BiBit(mat, min_rows, min_cols):
     return clusters
 
 
-def find_potential_snps(cases, controls, potential_snps, potential_snp_genotypes, local_real, chunk_no, snp_mapping = None):
-    total_controls = float(len(controls[0]))
-    total_snps = len(cases)
-    chunk_size = len(controls)
+def find_potential_snps(cases_bitmat, controls_bitmat, potential_snps, potential_snp_genotypes, local_real, chunk_no, snp_mapping = None):
+    total_controls = float(TOTAL_CONTROLS)
+    total_snps = len(cases_bitmat)
+    chunk_size = len(controls_bitmat)
 
-    print now(), 'processing chunk:', chunk_no, 'real snps:', len(local_real)
+    print now(), 'real snps:', len(local_real)
 
 
     print 'local real:', sorted(local_real)
 
 
 
-    cases_bitmat = bit_encode(cases)
+#    cases_bitmat = bit_encode(cases)
 
     if len(potential_snps) > 0:
         pot_snp_ids, pot_snp_genotypes = zip(*potential_snp_genotypes.iteritems())
-        cases_bitmat.extend(bit_encode(pot_snp_genotypes))
+        cases_bitmat.extend(pot_snp_genotypes)
         total_snps += len(pot_snp_ids)
 
         if snp_mapping is not None:
@@ -132,7 +132,7 @@ def find_potential_snps(cases, controls, potential_snps, potential_snp_genotypes
 
 
 
-    controls_bitmat = bit_encode(controls)
+#    controls_bitmat = bit_encode(controls)
 
 
     print now(), 'bit encoding done'
@@ -214,14 +214,15 @@ def preprocess(cases, controls, real_case_snps):
     print 'chunk size:', CHUNK_SIZE
     print 'total snps:', total_snps
     print 'causal snps:', len(real_case_snps)
-    total_controls = float(len(controls[0]))
+    total_controls = float(TOTAL_CONTROLS)
     print 'total controls:', total_controls
-
+    print 'total cases:', TOTAL_CASES
 
     chunks_to_sample = how_many_chunks(total_snps , CHUNK_SIZE, MIN_SNPS, 0.95)
     print now(), 'chunks to sample:', chunks_to_sample
+
     for chunk_no in xrange(chunks_to_sample):
-        print now(), 'sampling random chunk:', chunk_no
+        print now(), 'sampling random chunk:', chunk_no, 'out of', chunks_to_sample
 
         snp_mapping = sorted(random.sample(xrange(total_snps), CHUNK_SIZE))
 
@@ -243,15 +244,16 @@ def preprocess(cases, controls, real_case_snps):
         print '+'*100, '\n'
 
 
-
-    for chunk_no in xrange(1+(total_snps - 1)/CHUNK_SIZE):
+    chunks_to_process = 1+(total_snps - 1)/CHUNK_SIZE
+    for chunk_no in xrange(chunks_to_process):
 
         base_snp_id = chunk_no*CHUNK_SIZE
         last_snp_id = (chunk_no+1)*CHUNK_SIZE
         snp_mapping = range(base_snp_id, last_snp_id)
-        local_real = real_case_snps & set(snp_mapping)
+        local_real  = real_case_snps & set(snp_mapping)
 
         potential_snp_genotypes = dict((snp_id, cases[snp_id]) for snp_id in potential_snps)
+        print now(), 'processing chunk:', chunk_no, 'out of', chunks_to_process
 
         find_potential_snps(  cases[base_snp_id:last_snp_id],
                               controls[base_snp_id:last_snp_id],
@@ -415,13 +417,12 @@ def gwas(cases, controls, MAFs, alpha):
     return res
 
 
-def binarize_matrix(mat):
-    return [[int(bool(v)) for v in row] for row in mat]
 
 def pval(snps, cases, controls):
-    bi_controls = ones(reduce(lambda x,y: x & y, bit_encode([controls[snp_id] for snp_id in snps])))
-    bi_cases    = ones(reduce(lambda x,y: x & y, bit_encode([cases[snp_id] for snp_id in snps])))
-    return 'controls: %d' % bi_controls
+    return 0
+#    bi_controls = ones(reduce(lambda x,y: x & y, bit_encode([controls[snp_id] for snp_id in snps])))
+#    bi_cases    = ones(reduce(lambda x,y: x & y, bit_encode([cases[snp_id] for snp_id in snps])))
+#    return 'controls: %d' % bi_controls
 
 
 
@@ -454,7 +455,8 @@ if __name__ == '__main__':
 
 #    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_70_INDS.pickle'
 
-    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_30_SNPs_by_60_INDS.pickle'
+#    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_300k_100_SNPs_by_100_INDS.pickle'
+    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_300k_100_SNPs_by_70_INDS.pickle'
 
 
 #    input_file = 'SIMLD/CEU_300k_10k_chunked/CEU_100k_15_SNPs_by_100_INDS.pickle'
@@ -462,10 +464,12 @@ if __name__ == '__main__':
 
     print 'input:', input_file
 
-    data = pickle.load(open(input_file))
-    cases = binarize_matrix(data['cases'])
-    controls = binarize_matrix(data['controls'])
-    implanted_biclusters = data['implanted_biclusters']
+    cases, TOTAL_CASES, controls, TOTAL_CONTROLS, implanted_biclusters = pickle.load(open(input_file))
+
+#    data = pickle.load(open(input_file))
+#    cases = data['cases']
+#    controls = data['controls']
+#    implanted_biclusters = data['implanted_biclusters']
 
     MAX_LD = 0.2
 
@@ -575,7 +579,7 @@ if __name__ == '__main__':
 #
 #
 #def ld(bitmat):
-#    total_inds = float(bitmat[0].bit_length())
+#    total_inds = 1000.
 #    total_snps = len(bitmat)
 #    mafs = [ones(snp)/total_inds for snp in bitmat]
 #    #    print [m for m in  mafs if m > 1 or m < 0]
@@ -590,7 +594,7 @@ if __name__ == '__main__':
 #                ld_mat[i][j] = (ones(bitmat[i] & bitmat[j])/total_inds - mafs[i]*mafs[j])/(dens[i]*dens[j])
 #
 #    return ld_mat
-
+#
 #
 #from matplotlib.pylab import *
 #
