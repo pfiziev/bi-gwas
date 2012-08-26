@@ -131,7 +131,7 @@ def generate_from_BEAM_chunks():
 
     CASE_CONTROL_RATIO = 0.5 # the ratio of cases vs controls
 
-    BI_CASES = 70 # fraction of cases that are in one bicluster
+    BI_CASES = 100 # fraction of cases that are in one bicluster
     BI_SNPS = 100   # number of SNPs per bicluster
 
     BICLUSTERS = 1 # number of biclusters
@@ -222,6 +222,13 @@ def generate_from_BEAM_chunks():
                   implanted_biclusters],
                 open(out_fname, 'w'),
                 pickle.HIGHEST_PROTOCOL)
+
+
+#    boost = open(out_fname+ '.BOOST', 'w')
+#    boost.write('\n'.join(' '.join(map(str, [1] + [cases[snp_id][person_id] for snp_id in xrange(TOTAL_SNPS)])) for person_id in xrange(total_cases)))
+#    boost.write('\n'.join(' '.join(map(str, [0] + [controls[snp_id][person_id] for snp_id in xrange(TOTAL_SNPS)])) for person_id in xrange(total_controls)))
+#    print implanted_biclusters
+#    boost.close()
 
 #    pickle.dump({ 'cases': cases,
 #                  'controls': controls,
